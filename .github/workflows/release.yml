@@ -1,0 +1,9 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+jobs:
+  publish:
+    uses: skegdb/.github/.github/workflows/release-cargo.yml@main
+    secrets:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

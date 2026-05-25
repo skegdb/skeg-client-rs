@@ -1,0 +1,24 @@
+[package]
+name = "skeg-client"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.86"
+license = "Apache-2.0"
+repository = "https://github.com/skegdb/skeg-client-rs"
+homepage = "https://github.com/skegdb/skeg-client-rs"
+authors = ["skeg contributors"]
+description = "Rust client for skeg (binary protocol)"
+keywords = ["vector-database", "skeg", "client"]
+categories = ["database", "api-bindings"]
+
+[dependencies]
+# Keep this repo independently buildable in CI and downstream clones.
+skeg-proto = "0.1.0"
+tokio = { version = "1", features = ["full"] }
+bytes = "1"
+thiserror = "2"
+tracing = "0.1"
+socket2 = "0.5"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }

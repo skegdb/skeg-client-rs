@@ -1,0 +1,14 @@
+/Users/lupodevelop/Git/GitHub/skegdb/skeg-client-rs/target/debug/deps/thiserror-a92c0ab99422a8f0.d: /Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /Users/lupodevelop/Git/GitHub/skegdb/skeg-client-rs/target/debug/build/thiserror-bc77be90aa5dd592/out/private.rs
+
+/Users/lupodevelop/Git/GitHub/skegdb/skeg-client-rs/target/debug/deps/libthiserror-a92c0ab99422a8f0.rlib: /Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /Users/lupodevelop/Git/GitHub/skegdb/skeg-client-rs/target/debug/build/thiserror-bc77be90aa5dd592/out/private.rs
+
+/Users/lupodevelop/Git/GitHub/skegdb/skeg-client-rs/target/debug/deps/libthiserror-a92c0ab99422a8f0.rmeta: /Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /Users/lupodevelop/Git/GitHub/skegdb/skeg-client-rs/target/debug/build/thiserror-bc77be90aa5dd592/out/private.rs
+
+/Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs:
+/Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs:
+/Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs:
+/Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs:
+/Users/lupodevelop/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs:
+/Users/lupodevelop/Git/GitHub/skegdb/skeg-client-rs/target/debug/build/thiserror-bc77be90aa5dd592/out/private.rs:
+
+# env-dep:OUT_DIR=/Users/lupodevelop/Git/GitHub/skegdb/skeg-client-rs/target/debug/build/thiserror-bc77be90aa5dd592/out
