@@ -3,10 +3,11 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   ci:
     uses: skegdb/.github/.github/workflows/rust-ci.yml@main
     with:
       workspace: false
-      msrv: "1.86"
+      msrv: "1.88"

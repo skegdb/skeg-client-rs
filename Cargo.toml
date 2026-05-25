@@ -2,7 +2,7 @@
 name = "skeg-client"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.86"
+rust-version = "1.88"
 license = "Apache-2.0"
 repository = "https://github.com/skegdb/skeg-client-rs"
 homepage = "https://github.com/skegdb/skeg-client-rs"
@@ -22,3 +22,7 @@ socket2 = "0.5"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
+
+[lints.clippy]
+uninlined_format_args = "allow"
+manual_is_multiple_of = "allow"
