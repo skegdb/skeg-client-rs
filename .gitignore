@@ -1,0 +1,17 @@
+/target
+**/target/
+**/*.rs.bk
+*.pdb
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+*.swp
+*.swo
+.env
+.env.*
+!.env.example
+*.pem
+*.key

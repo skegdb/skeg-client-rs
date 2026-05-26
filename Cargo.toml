@@ -13,7 +13,7 @@ categories = ["database", "api-bindings"]
 
 [dependencies]
 # Keep this repo independently buildable in CI and downstream clones.
-skeg-proto = "0.1.0"
+skeg-proto = "0.1.1"
 tokio = { version = "1", features = ["full"] }
 bytes = "1"
 thiserror = "2"
