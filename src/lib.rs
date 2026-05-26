@@ -31,6 +31,9 @@ pub enum ClientError {
 
     #[error("connection closed by server")]
     ConnectionClosed,
+
+    #[error("request/response id mismatch: sent {sent}, got {got}")]
+    ReqIdMismatch { sent: u64, got: u64 },
 }
 
 pub type Result<T> = std::result::Result<T, ClientError>;
@@ -111,9 +114,19 @@ impl SkegClient {
         Ok(())
     }
 
-    async fn recv_frame(&mut self) -> Result<skeg_proto::Frame> {
+    /// Read the next frame and validate it carries the expected
+    /// `req_id`. A mismatch surfaces as `ReqIdMismatch` so a server
+    /// out-of-order reply or a desynchronised connection fails loud
+    /// instead of silently returning the wrong call's result.
+    async fn recv_frame(&mut self, expected_id: u64) -> Result<skeg_proto::Frame> {
         loop {
             if let Some(frame) = self.parser.feed(&mut self.read_buf)? {
+                if frame.header.req_id != expected_id {
+                    return Err(ClientError::ReqIdMismatch {
+                        sent: expected_id,
+                        got: frame.header.req_id,
+                    });
+                }
                 return Ok(frame);
             }
             let n = self.stream.read_buf(&mut self.read_buf).await?;
@@ -147,7 +160,7 @@ impl SkegClient {
     pub async fn ping(&mut self) -> Result<()> {
         let id = self.next_id();
         self.send(encode_ping(id)).await?;
-        let frame = self.recv_frame().await?;
+        let frame = self.recv_frame(id).await?;
         match frame.header.op {
             Op::Ok => Ok(()),
             Op::Err => Err(Self::server_err(&frame.payload)),
@@ -163,7 +176,7 @@ impl SkegClient {
     pub async fn stats(&mut self) -> Result<ServerStats> {
         let id = self.next_id();
         self.send(encode_stats(id)).await?;
-        let frame = self.recv_frame().await?;
+        let frame = self.recv_frame(id).await?;
         match frame.header.op {
             Op::Ok => decode_stats_response(&frame.payload).ok_or(ClientError::UnexpectedOp),
             Op::Err => Err(Self::server_err(&frame.payload)),
@@ -181,7 +194,7 @@ impl SkegClient {
     pub async fn shards(&mut self) -> Result<Vec<ShardStats>> {
         let id = self.next_id();
         self.send(encode_shards(id)).await?;
-        let frame = self.recv_frame().await?;
+        let frame = self.recv_frame(id).await?;
         match frame.header.op {
             Op::Ok => Ok(decode_shards_response(&frame.payload)),
             Op::Err => Err(Self::server_err(&frame.payload)),
@@ -199,7 +212,7 @@ impl SkegClient {
     pub async fn vindex_list(&mut self) -> Result<Vec<VindexInfo>> {
         let id = self.next_id();
         self.send(encode_vindex_list(id)).await?;
-        let frame = self.recv_frame().await?;
+        let frame = self.recv_frame(id).await?;
         match frame.header.op {
             Op::Ok => Ok(decode_vindex_list_response(&frame.payload)),
             Op::Err => Err(Self::server_err(&frame.payload)),
@@ -215,7 +228,7 @@ impl SkegClient {
     pub async fn get(&mut self, key: &[u8]) -> Result<Option<Bytes>> {
         let id = self.next_id();
         self.send(encode_get(id, key)).await?;
-        let frame = self.recv_frame().await?;
+        let frame = self.recv_frame(id).await?;
         match frame.header.op {
             Op::Ok => Ok(decode_value_response(&frame.payload)),
             Op::Err => {
@@ -239,7 +252,7 @@ impl SkegClient {
         let id = self.next_id();
         self.send(encode_set(id, key, value, Flags::empty()))
             .await?;
-        let frame = self.recv_frame().await?;
+        let frame = self.recv_frame(id).await?;
         match frame.header.op {
             Op::Ok => Ok(()),
             Op::Err => Err(Self::server_err(&frame.payload)),
@@ -267,7 +280,7 @@ impl SkegClient {
     pub async fn del(&mut self, key: &[u8]) -> Result<bool> {
         let id = self.next_id();
         self.send(encode_del(id, key)).await?;
-        let frame = self.recv_frame().await?;
+        let frame = self.recv_frame(id).await?;
         match frame.header.op {
             Op::Ok => Ok(decode_bool_response(&frame.payload)),
             Op::Err => Err(Self::server_err(&frame.payload)),
@@ -283,7 +296,7 @@ impl SkegClient {
     pub async fn mget(&mut self, keys: &[&[u8]]) -> Result<Vec<Option<Bytes>>> {
         let id = self.next_id();
         self.send(encode_mget(id, keys)).await?;
-        let frame = self.recv_frame().await?;
+        let frame = self.recv_frame(id).await?;
         match frame.header.op {
             Op::Ok => Ok(decode_mget_response(&frame.payload)),
             Op::Err => Err(Self::server_err(&frame.payload)),
@@ -314,7 +327,7 @@ impl SkegClient {
             backend.wire(),
         ))
         .await?;
-        let frame = self.recv_frame().await?;
+        let frame = self.recv_frame(id).await?;
         match frame.header.op {
             Op::Ok => Ok(()),
             Op::Err => Err(Self::server_err(&frame.payload)),
@@ -330,7 +343,7 @@ impl SkegClient {
     pub async fn vindex_drop(&mut self, name: &str) -> Result<()> {
         let id = self.next_id();
         self.send(encode_vindex_drop(id, name)).await?;
-        let frame = self.recv_frame().await?;
+        let frame = self.recv_frame(id).await?;
         match frame.header.op {
             Op::Ok => Ok(()),
             Op::Err => Err(Self::server_err(&frame.payload)),
@@ -347,7 +360,7 @@ impl SkegClient {
         let req_id = self.next_id();
         self.send(encode_vset(req_id, name, id, vector, Flags::empty()))
             .await?;
-        let frame = self.recv_frame().await?;
+        let frame = self.recv_frame(req_id).await?;
         match frame.header.op {
             Op::Ok => Ok(()),
             Op::Err => Err(Self::server_err(&frame.payload)),
@@ -364,7 +377,7 @@ impl SkegClient {
     pub async fn vget(&mut self, name: &str, id: u64) -> Result<Option<Vec<f32>>> {
         let req_id = self.next_id();
         self.send(encode_vget(req_id, name, id)).await?;
-        let frame = self.recv_frame().await?;
+        let frame = self.recv_frame(req_id).await?;
         match frame.header.op {
             Op::Ok => Ok(decode_value_response(&frame.payload).map(|b| bytes_to_f32_vec(&b))),
             Op::Err => {
@@ -386,7 +399,7 @@ impl SkegClient {
     pub async fn vdel(&mut self, name: &str, id: u64) -> Result<bool> {
         let req_id = self.next_id();
         self.send(encode_vdel(req_id, name, id)).await?;
-        let frame = self.recv_frame().await?;
+        let frame = self.recv_frame(req_id).await?;
         match frame.header.op {
             Op::Ok => Ok(decode_bool_response(&frame.payload)),
             Op::Err => Err(Self::server_err(&frame.payload)),
@@ -404,7 +417,7 @@ impl SkegClient {
     pub async fn vsearch(&mut self, name: &str, query: &[f32], k: u32) -> Result<Vec<(u64, f32)>> {
         let req_id = self.next_id();
         self.send(encode_vsearch(req_id, name, k, query)).await?;
-        let frame = self.recv_frame().await?;
+        let frame = self.recv_frame(req_id).await?;
         match frame.header.op {
             Op::Ok => Ok(decode_vsearch_response(&frame.payload)),
             Op::Err => Err(Self::server_err(&frame.payload)),
@@ -426,4 +439,56 @@ fn tune_socket(stream: &TcpStream) {
         .with_time(std::time::Duration::from_secs(60))
         .with_interval(std::time::Duration::from_secs(10));
     let _ = sock.set_tcp_keepalive(&ka);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn server_err_parses_code_and_message() {
+        // payload: [code u8][msg_len u8][msg bytes...]
+        let payload = Bytes::from_static(&[0x01, 9, b'n', b'o', b'-', b's', b'u', b'c', b'h', b'-', b'k']);
+        let err = SkegClient::server_err(&payload);
+        match err {
+            ClientError::Server { code, msg } => {
+                assert!(matches!(code, ErrCode::NotFound));
+                assert_eq!(msg, "no-such-k");
+            }
+            other => panic!("expected Server error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn server_err_unknown_code_falls_back_to_internal() {
+        let payload = Bytes::from_static(&[0xff, 2, b'h', b'i']);
+        match SkegClient::server_err(&payload) {
+            ClientError::Server { code, msg } => {
+                assert!(matches!(code, ErrCode::Internal));
+                assert_eq!(msg, "hi");
+            }
+            other => panic!("expected Server error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn server_err_short_payload_is_unexpected_op() {
+        let payload = Bytes::from_static(&[0x01]); // only the code byte
+        assert!(matches!(
+            SkegClient::server_err(&payload),
+            ClientError::UnexpectedOp
+        ));
+    }
+
+    #[test]
+    fn server_err_truncated_message_does_not_panic() {
+        // Declared msg_len=10 but only 3 message bytes follow. The
+        // parser should clamp rather than read out of bounds.
+        let payload = Bytes::from_static(&[0x01, 10, b'h', b'i', b'!']);
+        let err = SkegClient::server_err(&payload);
+        match err {
+            ClientError::Server { msg, .. } => assert_eq!(msg, "hi!"),
+            other => panic!("expected Server error, got {other:?}"),
+        }
+    }
 }
