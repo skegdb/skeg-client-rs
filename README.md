@@ -7,7 +7,7 @@ note at the bottom).
 
 ```toml
 [dependencies]
-skeg-client = "0.1.0"
+skeg-client = "0.1"
 tokio = { version = "1", features = ["full"] }
 ```
 
@@ -42,13 +42,13 @@ Each call is one round-trip on the single connection. There is no
 internal pooling: a `SkegClient` is `!Sync` so you hold one per task,
 or wrap it in your own mutex.
 
-| Group         | Methods                                                              |
-| ------------- | -------------------------------------------------------------------- |
-| Connection    | `connect(addr)`, `ping`                                              |
-| KV            | `get`, `set`, `set_no_reply`, `del`, `mget`                          |
+| Group         | Methods                                                                 |
+| ------------- | ----------------------------------------------------------------------- |
+| Connection    | `connect(addr)`, `ping`                                                 |
+| KV            | `get`, `set`, `set_no_reply`, `del`, `mget`                             |
 | Vector index  | `vindex_create(name, dim, kind, backend)`, `vindex_drop`, `vindex_list` |
-| Vector data   | `vset(name, id, vec)`, `vget`, `vdel`, `vsearch(name, query, k)`     |
-| Introspection | `stats`, `shards`                                                    |
+| Vector data   | `vset(name, id, vec)`, `vget`, `vdel`, `vsearch(name, query, k)`        |
+| Introspection | `stats`, `shards`                                                       |
 
 `VectorKind` is `F32 | Int8 | Binary`. `VectorBackend` is `Flat`
 (in-RAM exhaustive scan, fine up to a few thousand vectors) or
