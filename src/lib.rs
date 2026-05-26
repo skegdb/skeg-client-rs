@@ -448,7 +448,9 @@ mod tests {
     #[test]
     fn server_err_parses_code_and_message() {
         // payload: [code u8][msg_len u8][msg bytes...]
-        let payload = Bytes::from_static(&[0x01, 9, b'n', b'o', b'-', b's', b'u', b'c', b'h', b'-', b'k']);
+        let payload = Bytes::from_static(&[
+            0x01, 9, b'n', b'o', b'-', b's', b'u', b'c', b'h', b'-', b'k',
+        ]);
         let err = SkegClient::server_err(&payload);
         match err {
             ClientError::Server { code, msg } => {
