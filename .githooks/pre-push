@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Pre-push gate: cargo fmt + clippy + test. Skip with SKIP_PREPUSH=1.
+set -euo pipefail
+[[ "${SKIP_PREPUSH:-0}" == "1" ]] && { echo "pre-push: skipped" >&2; exit 0; }
+[[ -f Cargo.toml ]] || exit 0
+step() { printf "\n\033[1;36m▸ pre-push: %s\033[0m\n" "$1" >&2; }
+fail() { printf "\n\033[1;31m✗ pre-push failed at: %s\033[0m\n" "$1" >&2; exit 1; }
+step "cargo fmt --all -- --check"
+cargo fmt --all -- --check || fail "cargo fmt"
+step "cargo clippy --workspace --all-features -- -D warnings"
+cargo clippy --workspace --all-features --no-deps -- -D warnings || fail "cargo clippy"
+step "cargo test --workspace --all-features --no-fail-fast"
+cargo test --workspace --all-features --no-fail-fast || fail "cargo test"
+printf "\n\033[1;32m✓ pre-push gate passed\033[0m\n" >&2
