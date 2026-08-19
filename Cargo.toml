@@ -13,7 +13,7 @@ categories = ["database", "api-bindings"]
 
 [dependencies]
 # Keep this repo independently buildable in CI and downstream clones.
-skeg-proto = "0.1.1"
+skeg-proto = "0.2"
 tokio = { version = "1", features = ["full"] }
 bytes = "1"
 thiserror = "2"
@@ -22,6 +22,9 @@ socket2 = "0.5"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
+# Reads the shared conformance case files. Test-only: the client itself
+# stays dependency-light.
+serde_json = "1"
 
 [lints.clippy]
 uninlined_format_args = "allow"
