@@ -3,17 +3,22 @@
 //! `skeg-client` - async TCP client for the skeg binary protocol.
 
 use bytes::{Bytes, BytesMut};
+pub use skeg_proto::NativeCapabilities;
 use skeg_proto::{
-    ErrCode, Flags, FrameParser, NativeCapabilities, Op, ParseError, ServerStats, ShardStats,
-    VERSION_V1, VERSION_V2, VindexInfo, bytes_to_f32_vec, decode_bool_response,
-    decode_mget_response, decode_native_capabilities_response, decode_shards_response,
-    decode_stats_response, decode_value_response, decode_vindex_list_response,
-    decode_vsearch_response, encode_del, encode_get, encode_mget, encode_native_hello, encode_ping,
-    encode_set, encode_shards, encode_stats, encode_vdel, encode_vget, encode_vindex_create,
-    encode_vindex_drop, encode_vindex_list, encode_vsearch, encode_vset,
+    ErrCode, Flags, FrameParser, Op, ParseError, ServerStats, ShardStats, VERSION_V1, VERSION_V2,
+    VindexInfo, bytes_to_f32_vec, decode_bool_response, decode_mget_response,
+    decode_native_capabilities_response, decode_shards_response, decode_stats_response,
+    decode_value_response, decode_vindex_list_response, decode_vsearch_response, encode_del,
+    encode_get, encode_mget, encode_native_hello, encode_ping, encode_set, encode_shards,
+    encode_stats, encode_vdel, encode_vget, encode_vindex_create, encode_vindex_drop,
+    encode_vindex_list, encode_vsearch, encode_vset,
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpStream, ToSocketAddrs};
+
+// Re-exported so a caller does not need its own skeg-proto dependency just to
+// name a protocol version or read a capability response.
+pub use skeg_proto::{NativeVectorKindV2, VERSION_V1 as PROTOCOL_V1, VERSION_V2 as PROTOCOL_V2};
 
 /// Error returned by client operations.
 #[derive(Debug, thiserror::Error)]

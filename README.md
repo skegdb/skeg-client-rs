@@ -2,12 +2,15 @@
 
 Async Rust client for the [skeg](https://github.com/skegdb/skeg)
 binary protocol. Single-connection, tokio-based, talks to the native
-`skeg` server on port `7379` (not the RESP3 server on `6379`; see the
-note at the bottom).
+`skeg` server on port `7379` (not the RESP3 server on `6379`).
+
+Speaks native protocol v1 and v2. Note that RESP3 carries a larger
+command surface than the native wire does - see the note at the bottom
+before choosing.
 
 ```toml
 [dependencies]
-skeg-client = "0.1"
+skeg-client = "0.2"
 tokio = { version = "1", features = ["full"] }
 ```
 
@@ -44,16 +47,44 @@ or wrap it in your own mutex.
 
 | Group         | Methods                                                                 |
 | ------------- | ----------------------------------------------------------------------- |
-| Connection    | `connect(addr)`, `ping`                                                 |
+| Connection    | `connect(addr)`, `connect_with_version(addr, PROTOCOL_V2)`, `version()`, `ping` |
 | KV            | `get`, `set`, `set_no_reply`, `del`, `mget`                             |
-| Vector index  | `vindex_create(name, dim, kind, backend)`, `vindex_drop`, `vindex_list` |
+| Vector index  | `vindex_create(name, dim, kind, backend)`, `vindex_create_v2`, `vindex_drop`, `vindex_list` |
 | Vector data   | `vset(name, id, vec)`, `vget`, `vdel`, `vsearch(name, query, k)`        |
-| Introspection | `stats`, `shards`                                                       |
+| Introspection | `stats`, `shards`, `native_hello`                                       |
 
-`VectorKind` is `F32 | Int8 | Binary`. `VectorBackend` is `Flat`
-(in-RAM exhaustive scan, fine up to a few thousand vectors) or
-`DiskVamana` (on-disk Vamana graph, the right choice past that
-threshold).
+`VectorBackend` is `Flat` (in-RAM exhaustive scan, fine up to a few
+thousand vectors) or `DiskVamana` (on-disk Vamana graph, the right
+choice past that threshold).
+
+## Protocol versions
+
+The native wire has two versions, and the client speaks one per
+connection.
+
+| | v1 (`connect`) | v2 (`connect_with_version`) |
+| --- | --- | --- |
+| Kinds | `VectorKind`: F32, Int8, Binary | `VectorKindV2`: F32, Int8, Binary, Tq1, Tq2, Tq4 |
+| Capability negotiation | — | `native_hello()` |
+
+```rust
+use skeg_client::{NativeVectorKindV2, SkegClient, VectorBackend, VectorKindV2, PROTOCOL_V2};
+
+let mut c = SkegClient::connect_with_version("127.0.0.1:7379", PROTOCOL_V2).await?;
+let caps = c.native_hello().await?;
+if caps.supports(NativeVectorKindV2::Tq2) {
+    c.vindex_create_v2("notes", 1024, VectorKindV2::Tq2, VectorBackend::DiskVamana).await?;
+}
+```
+
+**`VectorKindV2` is a separate enum from `VectorKind`, not an extension
+of it.** Kind byte 3 means PQ in v1 and TQ1 in v2; a single enum would
+hide exactly the collision that v2 exists to resolve. The server refuses
+byte 3 in a v1 frame rather than build an index you did not ask for.
+
+Every request carries the connection's version, and a reply that comes
+back in a different one is rejected as `VersionMismatch` rather than
+parsed anyway.
 
 ## Errors
 
@@ -64,12 +95,47 @@ All operations return `Result<T, ClientError>`:
 - `Server { code, msg }` for `-ERR` frames from the server.
 - `UnexpectedOp` for the wrong opcode in a response.
 - `ConnectionClosed` for a half-closed read.
+- `VersionMismatch` when a reply's frame version is not the request's.
+- `RequiresV2` for a v2-only call on a v1 connection, refused locally
+  rather than sent for the server to reject.
+- `BadNativeHello` for a malformed capability response.
 
 ## RESP3 instead?
 
-`skeg-client` speaks the native binary protocol on port `7379`. For
-the RESP3 wire on `6379` use any Redis client (e.g. `redis-rs`); the
-server speaks both protocols with the same data underneath.
+**RESP3 carries more than this client can.** Vector payloads, search
+filters, bulk `VMSET`, index consolidation, and every tenancy, quota and
+QoS command exist only there; the native protocol has no frame for any
+of them.
+
+There is deliberately no second Rust client for it. Any Redis crate
+sends arbitrary commands, so `redis-rs` reaches the whole `SKEG.*`
+namespace already:
+
+```rust
+let mut conn = redis::Client::open("redis://127.0.0.1:6379/")?.get_connection()?;
+let hits: Vec<redis::Value> = redis::cmd("SKEG.VSEARCH")
+    .arg("notes").arg(10).arg(0).arg(query_bytes).arg("WITHPAYLOAD")
+    .query(&mut conn)?;
+```
+
+Reach for `skeg-client` when you want typed calls over the native wire
+and can live with its smaller surface. Reach for a Redis crate when you
+want the full command set. Both talk to the same data.
+
+## Conformance
+
+`tests/conformance.rs` runs the case files shared by every skeg client,
+driving this crate's public API:
+
+```sh
+SKEG_BIN=$(which skeg) \
+SKEG_CONFORMANCE_DIR=<skeg-internal>/conformance cargo test
+```
+
+Without both env vars the test skips. Cases marked `wire_only` are
+skipped by design: they are things a typed client cannot express, and
+the case files ship standalone validators that cover them against the
+raw wire.
 
 ## License
 
