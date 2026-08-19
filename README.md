@@ -65,7 +65,7 @@ connection.
 | | v1 (`connect`) | v2 (`connect_with_version`) |
 | --- | --- | --- |
 | Kinds | `VectorKind`: F32, Int8, Binary | `VectorKindV2`: F32, Int8, Binary, Tq1, Tq2, Tq4 |
-| Capability negotiation | — | `native_hello()` |
+| Capability negotiation | not available | `native_hello()` |
 
 ```rust
 use skeg_client::{NativeVectorKindV2, SkegClient, VectorBackend, VectorKindV2, PROTOCOL_V2};

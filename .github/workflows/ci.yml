@@ -11,3 +11,31 @@ jobs:
     with:
       workspace: false
       msrv: "1.88"
+
+  conformance:
+    name: Conformance (shared cases)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.88.0"
+      - name: build the skeg server and fetch the shared cases
+        # The case files ship with the engine, so one clone provides both the
+        # server to test against and the contract to test with.
+        run: |
+          set -euo pipefail
+          git clone --depth=1 https://github.com/skegdb/skeg /tmp/skeg-ci-src
+          cd /tmp/skeg-ci-src
+          cargo build --release -p skeg-server --locked
+          echo "SKEG_BIN=/tmp/skeg-ci-src/target/release/skeg" >> "$GITHUB_ENV"
+          echo "SKEG_CONFORMANCE_DIR=/tmp/skeg-ci-src/conformance" >> "$GITHUB_ENV"
+      - name: cargo test --test conformance
+        run: cargo test --test conformance -- --nocapture
+      - name: cases actually ran
+        # Without the env vars the test returns early and passes; that would
+        # be green while covering nothing.
+        run: |
+          set -euo pipefail
+          cargo test --test conformance -- --nocapture 2>&1 | tee /tmp/conf.log
+          grep -q 'native cases passed' /tmp/conf.log
